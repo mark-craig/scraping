@@ -1,5 +1,5 @@
 """
-This file simply provides a dictionary template and keywords that all scrapers will use to extract product data.
+This file simply provides a dictionary template and keywords to organize objects and methods correlating to product data.
 """
 P_NAME = 'name'
 P_CURRENT_PRICE = 'current_price'

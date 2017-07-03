@@ -5,7 +5,7 @@ from selenium.common.exceptions import NoSuchElementException
 import json
 import os
 
-class Scraper:
+class Scraper(object):
 	"""
 	A class that serves as a base for each scraper that is specialized to a 
 	particular website. It should contain all data that will need to be customized 
@@ -13,35 +13,38 @@ class Scraper:
 	be updated, simple changes can be made here without disrupting the logic of the 
 	scraping process itself.
 	"""
-
-	# List of URLs to scrape products from. 
-	# These may have to be updated if the site undergoes changes.
-	urls = []
-	# String representing CSS selector to get product entries on page. 
-	# The product details are extracted from these parent entries.
-	product_entry_selector = ''
-	# CSS selectors to obtain Selenium elements containing product data. 
-	# These may have to be updated if the site undergoes changes.
-	product_data_selectors = P_DATA.copy()
-
 	# Methods to extract product data from Selenium elements
-	def default_extract(element):
+	def text_extract(self, element):
 		return str(element.text)
 
-	def link_extract(element):
+	def link_extract(self, element):
 		return str(element.get_attribute('href'))
 
-	# A collection of methods to extract individual pieces of product data 
-	product_data_extractors = P_DATA.copy()
-	product_data_extractors[P_LINK] = link_extract
-	
-	for key, value in product_data_extractors.iteritems():
-		if value is None:
-			product_data_extractors[key] = default_extract
+	def image_extract(self, element):
+		return str(element.get_attribute('src'))
 
+	def __init__(self):		
+		# List of URLs to scrape products from. 
+		# These may have to be updated if the site undergoes changes.
+		self.urls = []
+		# String representing CSS selector to get product entries on page. 
+		# The product details are extracted from these parent entries.
+		self.product_entry_selector = ''
+		# CSS selectors to obtain Selenium elements containing product data. 
+		# These may have to be updated if the site undergoes changes.
+		self.product_data_selectors = P_DATA.copy()
 
+		# A collection of methods to extract individual pieces of product data 
+		self.product_data_extractors = P_DATA.copy()
+		self.product_data_extractors[P_LINK] = self.link_extract
+		self.product_data_extractors[P_IMAGE] = self.image_extract
+		
+		for key, value in self.product_data_extractors.iteritems():
+			if value is None:
+				self.product_data_extractors[key] = self.text_extract
 
 	# Main method. Should not be overridden.
+	RETRY_LIMIT = 10
 	def execute(self):
 		driver = webdriver.Chrome()
 		for url in self.urls:
@@ -53,12 +56,20 @@ class Scraper:
 				result = P_DATA.copy()
 				for attr, sel in self.product_data_selectors.iteritems():
 					if sel is not None:
-						try:
-							extractor = self.product_data_extractors[attr]
-							result[attr] = \
-								extractor(p.find_element_by_css_selector(sel))
-						except NoSuchElementException:
-							print('Did not find ' + attr + ' for product#' + str(i))
+						for x in range(self.RETRY_LIMIT):
+							try:
+								extractor = self.product_data_extractors[attr]
+								result[attr] = \
+									extractor(p.find_element_by_css_selector(sel))
+								break
+							except NoSuchElementException:
+								""" If the element is lazily loaded, the product
+								may need to be scrolled into view to be 
+								accessed """
+								if (x + 1 < self.RETRY_LIMIT):
+									driver.execute_script("arguments[0].scrollIntoView();", p)
+								else:
+									print('Did not find ' + attr + ' for product#' + str(i))
 				filename = str(i) + '-' + ''.join(x for x in result['name'] if x.isalnum()) + '.json'
 				with open(os.path.join(os.getcwd(), 'temp', filename), 'w') as outfile:
 					json.dump(result, outfile)

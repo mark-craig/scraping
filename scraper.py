@@ -1,9 +1,11 @@
-
+from datetime import datetime
+import json
+import logging
+import os
 from PRODUCT_DATA import *
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
-import json
-import os
+import shutil
 
 class Scraper(object):
 	"""
@@ -43,6 +45,25 @@ class Scraper(object):
 			if value is None:
 				self.product_data_extractors[key] = self.text_extract
 
+
+		# make sure there is a temp directory and a log directory
+		if not os.path.exists(os.path.join(os.getcwd(), 'temp')):
+			os.makedirs(os.path.join(os.getcwd(), 'temp'))
+
+		if not os.path.exists(os.path.join(os.getcwd(), 'logs')):
+			os.makedirs(os.path.join(os.getcwd(), 'logs'))
+
+		# set up the logger
+		self.logger = logging.getLogger(__name__)
+		log_file_name = os.path.join(os.getcwd(), 'logs', datetime.now().strftime("%d_%m_%Y.log"))
+		self.logger.setLevel(logging.DEBUG)
+		handler = logging.FileHandler(log_file_name)
+		handler.setLevel(logging.DEBUG)
+		formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+		handler.setFormatter(formatter)
+		self.logger.addHandler(handler)
+
+
 	# Main method. Should not be overridden.
 	RETRY_LIMIT = 10
 	def execute(self):
@@ -69,7 +90,23 @@ class Scraper(object):
 								if (x + 1 < self.RETRY_LIMIT):
 									driver.execute_script("arguments[0].scrollIntoView();", p)
 								else:
-									print('Did not find ' + attr + ' for product#' + str(i))
+									self.logger.debug('Did not find ' + attr + ' for product#' + str(i))
 				filename = str(i) + '-' + ''.join(x for x in result['name'] if x.isalnum()) + '.json'
 				with open(os.path.join(os.getcwd(), 'temp', filename), 'w') as outfile:
 					json.dump(result, outfile)
+		self.analyze_and_log()
+
+	def analyze_and_log(self):
+		total_values = 0.0
+		valid_values = 0.0
+		directory = os.path.join(os.getcwd(), 'temp')
+		number_of_entries = len(os.listdir(directory))
+		for filename in os.listdir(directory):
+			with open(os.path.join(directory, filename)) as json_data:
+				data = json.load(json_data)
+				total_values += len(data.values())
+				for v in data.values():
+					if v is not None:
+						valid_values += 1
+
+		self.logger.info('Accuracy of ' + str(valid_values/total_values) + ' across ' + str(number_of_entries) + ' products')

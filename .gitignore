@@ -1,4 +1,5 @@
 temp/*
+logs/*
 chromedriver*
 *.pyc
 *.log

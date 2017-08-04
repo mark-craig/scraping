@@ -25,7 +25,32 @@ class Scraper(object):
 	def image_extract(self, element):
 		return str(element.get_attribute('src'))
 
-	def __init__(self):		
+	def price_extract(self, element):
+		raw = str(element.text)
+		return float(''.join([c for c in raw if c.isdigit() or c == '.']))
+
+	# Methods to autofill product data for which there may not be a selector
+	def calculate_markdown(self, product_data):
+		# calculate the markdown, assuming the current price and original price exist
+		if product_data[P_CURRENT_PRICE] and product_data[P_ORIGINAL_PRICE]:
+			curr = product_data[P_CURRENT_PRICE]
+			og = product_data[P_ORIGINAL_PRICE]
+			return 1.0 - curr/og
+		else:
+			# if one is missing, the scraper only found one price, so return 0
+			return 0.0
+	
+	def fill_original_price(self, product_data):
+		# if the scraper could not find the original price, assume it's the current one
+		return product_data[P_CURRENT_PRICE]
+
+
+	def fill_current_price(self, product_data):
+		# if the scraper could not find the current price, assume it's the original one
+		return product_data[P_ORIGINAL_PRICE]
+
+
+	def __init__(self):
 		# List of URLs to scrape products from. 
 		# These may have to be updated if the site undergoes changes.
 		self.urls = []
@@ -40,10 +65,19 @@ class Scraper(object):
 		self.product_data_extractors = P_DATA.copy()
 		self.product_data_extractors[P_LINK] = self.link_extract
 		self.product_data_extractors[P_IMAGE] = self.image_extract
+		self.product_data_extractors[P_CURRENT_PRICE] = self.price_extract
+		self.product_data_extractors[P_ORIGINAL_PRICE] = self.price_extract
 		
 		for key, value in self.product_data_extractors.iteritems():
 			if value is None:
 				self.product_data_extractors[key] = self.text_extract
+
+		# A collection of methods to autofill product data
+		# A corresponding method is needed here if data has no selector
+		self.product_data_autofill = P_DATA.copy()
+		self.product_data_autofill[P_MARKDOWN] = self.calculate_markdown
+		self.product_data_autofill[P_ORIGINAL_PRICE] = self.fill_original_price
+		self.product_data_autofill[P_CURRENT_PRICE] = self.fill_current_price
 
 
 		# make sure there is a temp directory and a log directory
@@ -91,6 +125,15 @@ class Scraper(object):
 									driver.execute_script("arguments[0].scrollIntoView();", p)
 								else:
 									self.logger.debug('Did not find ' + attr + ' for product#' + str(i))
+				# if result is missing any values, try to autofill them if possible
+				for attr, value in result.iteritems():
+					if value is None:
+						if self.product_data_autofill[attr]:
+							self.logger.debug('Attempting to autofill ' + attr + 'for product#' + str(i))
+							result[attr] = self.product_data_autofill[attr](result)
+						else:
+							self.logger.debug('Could not autofill ' + attr + 'for product#' + str(i))
+
 				filename = str(i) + '-' + ''.join(x for x in result['name'] if x.isalnum()) + '.json'
 				with open(os.path.join(os.getcwd(), 'temp', filename), 'w') as outfile:
 					json.dump(result, outfile)

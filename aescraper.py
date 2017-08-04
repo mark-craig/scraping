@@ -19,3 +19,5 @@ class AEScraper(Scraper):
 		self.product_data_selectors[P_ORIGINAL_PRICE] = '.product-listprice+ .product-listprice'
 		self.product_data_selectors[P_IMAGE] = '.lazyloaded'
 		self.product_data_selectors[P_LINK] = '.product-info a'
+
+		self.product_data_autofill[P_BRAND] = lambda x: 'American Eagle Outfitters'

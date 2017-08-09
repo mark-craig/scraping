@@ -17,16 +17,16 @@ class Scraper(object):
 	"""
 	# Methods to extract product data from Selenium elements
 	def text_extract(self, element):
-		return str(element.text)
+		return (element.text).encode('utf-8')
 
 	def link_extract(self, element):
-		return str(element.get_attribute('href'))
+		return (element.get_attribute('href')).encode('utf-8')
 
 	def image_extract(self, element):
-		return str(element.get_attribute('src'))
+		return (element.get_attribute('src')).encode('utf-8')
 
 	def price_extract(self, element):
-		raw = str(element.text)
+		raw = (element.text).encode('utf-8')
 		return float(''.join([c for c in raw if c.isdigit() or c == '.']))
 
 	# Methods to autofill product data for which there may not be a selector

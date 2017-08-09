@@ -1,4 +1,5 @@
 from aescraper import AEScraper
+from uniqlo import UniqloScraper
 
-s = AEScraper()
+s = UniqloScraper()
 s.execute()

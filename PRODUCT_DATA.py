@@ -8,6 +8,7 @@ P_MARKDOWN = 'markdown'
 P_IMAGE = 'image'
 P_LINK = 'link'
 P_BRAND = 'brand'
+P_DEPT = 'department'
 
 # This dictionary can be copied to provide a place to collect functions or objects corresponding to product data
 P_DATA = {
@@ -17,5 +18,10 @@ P_DATA = {
 	P_MARKDOWN : None,
 	P_IMAGE : None,
 	P_LINK : None,
-	P_BRAND : None
+	P_BRAND : None,
+	P_DEPT : None
 }
+
+# These are the constant keywords for different departments products may belong to
+D_MEN = "MEN'S"
+D_WOMEN = "WOMEN'S"

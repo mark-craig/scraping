@@ -51,9 +51,12 @@ class Scraper(object):
 
 
 	def __init__(self):
-		# List of URLs to scrape products from. 
+		# Dictonary of URL lists to scrape products from, keyed by department
 		# These may have to be updated if the site undergoes changes.
-		self.urls = []
+		self.departments = {
+			D_MEN : [],
+			D_WOMEN : []
+		}
 		# String representing CSS selector to get product entries on page. 
 		# The product details are extracted from these parent entries.
 		self.product_entry_selector = ''
@@ -102,41 +105,51 @@ class Scraper(object):
 	RETRY_LIMIT = 10
 	def execute(self):
 		driver = webdriver.Chrome()
-		for url in self.urls:
-			driver.get(url)
-			prods = driver.find_elements_by_css_selector(self.product_selector)
-			i = 0
-			for p in prods:
-				i+=1
-				result = P_DATA.copy()
-				for attr, sel in self.product_data_selectors.iteritems():
-					if sel is not None:
-						for x in range(self.RETRY_LIMIT):
-							try:
-								extractor = self.product_data_extractors[attr]
-								result[attr] = \
-									extractor(p.find_element_by_css_selector(sel))
-								break
-							except NoSuchElementException:
-								""" If the element is lazily loaded, the product
-								may need to be scrolled into view to be 
-								accessed """
-								if (x + 1 < self.RETRY_LIMIT):
-									driver.execute_script("arguments[0].scrollIntoView();", p)
-								else:
-									self.logger.debug('Did not find ' + attr + ' for product#' + str(i))
-				# if result is missing any values, try to autofill them if possible
-				for attr, value in result.iteritems():
-					if value is None:
-						if self.product_data_autofill[attr]:
-							self.logger.debug('Attempting to autofill ' + attr + 'for product#' + str(i))
-							result[attr] = self.product_data_autofill[attr](result)
-						else:
-							self.logger.debug('Could not autofill ' + attr + 'for product#' + str(i))
+		for dept, urls in self.departments.iteritems():
+			# iterate through the department urls
+			for url in urls:
+				driver.get(url)
+				prods = driver.find_elements_by_css_selector(self.product_selector)
+				i = 0
+				""" Iterate through the products on the page. If the products are lazily loaded, hopefully
+				this will detect that they are present, but the elements contained within the div may not
+				be accessible until they are scrolled into view. """
+				for p in prods:
+					i+=1
+					result = P_DATA.copy()
+					""" This next line assumes that one can view products by department on a site.
+					If for some reason this is not the case, the key in the departments dict
+					can be set to None, and an autofill method can be written for P_DEPT """
+					result[P_DEPT] = dept
+					for attr, sel in self.product_data_selectors.iteritems():
+						if sel is not None:
+							for x in range(self.RETRY_LIMIT):
+								try:
+									extractor = self.product_data_extractors[attr]
+									result[attr] = \
+										extractor(p.find_element_by_css_selector(sel))
+									break
+								except NoSuchElementException:
+									""" If the element is lazily loaded, the product
+									may need to be scrolled into view to be 
+									accessed """
+									if (x + 1 < self.RETRY_LIMIT):
+										driver.execute_script("arguments[0].scrollIntoView();", p)
+									else:
+										self.logger.debug('Did not find ' + attr + ' for product#' + str(i))
+					# if result is missing any values, try to autofill them if possible
+					for attr, value in result.iteritems():
+						if value is None:
+							if self.product_data_autofill[attr]:
+								self.logger.debug('Attempting to autofill ' + attr + 'for product#' + str(i))
+								result[attr] = self.product_data_autofill[attr](result)
+							else:
+								self.logger.debug('Could not autofill ' + attr + 'for product#' + str(i))
 
-				filename = str(i) + '-' + ''.join(x for x in result['name'] if x.isalnum()) + '.json'
-				with open(os.path.join(os.getcwd(), 'temp', filename), 'w') as outfile:
-					json.dump(result, outfile)
+					filename = str(i) + '-' + ''.join(x for x in result['name'] if x.isalnum()) + '.json'
+					with open(os.path.join(os.getcwd(), 'temp', filename), 'w') as outfile:
+						json.dump(result, outfile)
+		
 		self.analyze_and_log()
 
 	def analyze_and_log(self):

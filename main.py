@@ -1,7 +1,6 @@
 from aescraper import AEScraper
-from uniqlo import UniqloScraper
-from oldnavy import OldNavyScraper
-from hm import HMScraper
+from uniqloscraper import UniqloScraper
+from hmscraper import HMScraper
 
 s = HMScraper()
 s.execute()

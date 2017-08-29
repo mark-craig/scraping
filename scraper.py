@@ -100,8 +100,10 @@ class Scraper(object):
 
 
 		# make sure there is a temp directory and a log directory
-		if not os.path.exists(os.path.join(os.getcwd(), 'temp')):
-			os.makedirs(os.path.join(os.getcwd(), 'temp'))
+		self.TEMP_DIR = os.path.join(os.path.abspath(os.sep), 'TEMP_JSON_FILES')
+
+		if not os.path.exists(self.TEMP_DIR):
+			os.makedirs(self.TEMP_DIR)
 
 		if not os.path.exists(os.path.join(os.getcwd(), 'logs')):
 			os.makedirs(os.path.join(os.getcwd(), 'logs'))
@@ -164,7 +166,7 @@ class Scraper(object):
 								else:
 									self.logger.debug('Could not autofill ' + attr + 'for product#' + str(i))
 						filename = str(i) + '-' + ''.join(x for x in result['name'] if x.isalnum()) + '.json'
-						with open(os.path.join(os.getcwd(), 'temp', filename), 'w') as outfile:
+						with open(os.path.join(self.TEMP_DIR, filename), 'w') as outfile:
 							json.dump(result, outfile)
 					# go to next page if applicable
 					remaining_page = self.get_next_page(driver)

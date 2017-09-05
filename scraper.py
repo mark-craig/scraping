@@ -4,7 +4,8 @@ import logging
 import os
 from PRODUCT_DATA import *
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException
+from selenium.webdriver.chrome.options import Options
 import shutil
 import pdb
 
@@ -100,7 +101,7 @@ class Scraper(object):
 
 
 		# make sure there is a temp directory and a log directory
-		self.TEMP_DIR = os.path.join(os.path.abspath(os.sep), 'TEMP_JSON_FILES')
+		self.TEMP_DIR = os.path.join(os.path.expanduser('~'), 'TEMP_JSON_FILES')
 
 		if not os.path.exists(self.TEMP_DIR):
 			os.makedirs(self.TEMP_DIR)
@@ -122,7 +123,16 @@ class Scraper(object):
 	# Main method. Should not be overridden.
 	RETRY_LIMIT = 10
 	def execute(self):
-		driver = webdriver.Chrome()
+		chrome_options = Options()  
+		chrome_options.add_argument("--headless")
+		try:
+			# Windows should find driver in same directory
+			driver = webdriver.Chrome()
+		except WebDriverException:
+			# Ubuntu needs the path to be specified
+			driver_path = os.path.join(os.getcwd(), 'chromedriver')
+			driver = webdriver.Chrome(driver_path)
+
 		for dept, urls in self.departments.iteritems():
 			# iterate through the department urls
 			for url in urls:
@@ -161,7 +171,6 @@ class Scraper(object):
 						for attr, value in result.iteritems():
 							if value is None:
 								if self.product_data_autofill[attr]:
-									self.logger.debug('Attempting to autofill ' + attr + 'for product#' + str(i))
 									result[attr] = self.product_data_autofill[attr](result)
 								else:
 									self.logger.debug('Could not autofill ' + attr + 'for product#' + str(i))
@@ -190,10 +199,10 @@ class Scraper(object):
 	def analyze_and_log(self):
 		total_values = 0.0
 		valid_values = 0.0
-		directory = os.path.join(os.getcwd(), 'temp')
-		number_of_entries = len(os.listdir(directory))
-		for filename in os.listdir(directory):
-			with open(os.path.join(directory, filename)) as json_data:
+		entries = os.listdir(self.TEMP_DIR)
+		number_of_entries = len(entries)
+		for filename in entries:
+			with open(os.path.join(self.TEMP_DIR, filename)) as json_data:
 				data = json.load(json_data)
 				total_values += len(data.values())
 				for v in data.values():

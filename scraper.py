@@ -119,27 +119,29 @@ class Scraper(object):
 		handler.setFormatter(formatter)
 		self.logger.addHandler(handler)
 
-
-	# Main method. Should not be overridden.
-	RETRY_LIMIT = 10
-	def execute(self):
+		# Set up Selenium driver
 		chrome_options = Options()  
 		chrome_options.add_argument("--headless")
 		try:
 			# Windows should find driver in same directory
-			driver = webdriver.Chrome()
+			self.driver = webdriver.Chrome(chrome_options=chrome_options)
 		except WebDriverException:
 			# Ubuntu needs the path to be specified
 			driver_path = os.path.join(os.getcwd(), 'chromedriver')
-			driver = webdriver.Chrome(driver_path)
+			self.driver = webdriver.Chrome(driver_path)
 
+
+
+	# Main method. Should not be overridden.
+	RETRY_LIMIT = 10
+	def execute(self):
 		for dept, urls in self.departments.iteritems():
 			# iterate through the department urls
 			for url in urls:
-				driver.get(url)
+				self.driver.get(url)
 				remaining_page = True
 				while remaining_page:
-					prods = driver.find_elements_by_css_selector(self.product_selector)
+					prods = self.driver.find_elements_by_css_selector(self.product_selector)
 					i = 0
 					""" Iterate through the products on the page. If the products are lazily loaded, hopefully
 					this will detect that they are present, but the elements contained within the div may not
@@ -164,7 +166,7 @@ class Scraper(object):
 										may need to be scrolled into view to be 
 										accessed """
 										if (x + 1 < self.RETRY_LIMIT):
-											driver.execute_script("arguments[0].scrollIntoView();", p)
+											self.driver.execute_script("arguments[0].scrollIntoView();", p)
 										else:
 											self.logger.debug('Did not find ' + attr + ' for product#' + str(i))
 						# if result is missing any values, try to autofill them if possible
@@ -178,11 +180,11 @@ class Scraper(object):
 						with open(os.path.join(self.TEMP_DIR, filename), 'w') as outfile:
 							json.dump(result, outfile)
 					# go to next page if applicable
-					remaining_page = self.get_next_page(driver)
+					remaining_page = self.get_next_page()
 			
 		self.analyze_and_log()
 
-	def get_next_page(self, driver):
+	def get_next_page(self):
 		"""If product results are paginated, get the next page with the driver and return True.
 			If products are not paginated or there are no more pages, return False."""
 		if not self.next_page_selector:
@@ -190,10 +192,10 @@ class Scraper(object):
 			return False
 		else:
 			try: 
-				link = driver.find_element_by_css_selector(self.next_page_selector)
+				link = self.driver.find_element_by_css_selector(self.next_page_selector)
 				link.click()
 				return True
-			except NoSuchElementException:
+			except (NoSuchElementException, WebDriverException) as error:
 				return False
 
 	def analyze_and_log(self):

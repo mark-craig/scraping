@@ -7,7 +7,7 @@ class UniqloScraper(Scraper):
 	"""
 	def __init__(self):
 		super(UniqloScraper, self).__init__()
-		self.departments = {D_MEN : ['https://www.uniqlo.com/us/en/men/sale']}
+		self.departments = {D_MEN : ['https://www.uniqlo.com/us/en/men/sale'], D_WOMEN : ['https://www.uniqlo.com/us/en/women/sale']}
 		self.product_selector = '.grid-tile'
 		self.product_data_selectors[P_NAME] = '.name-link'
 		self.product_data_selectors[P_CURRENT_PRICE] = '.product-sales-price'

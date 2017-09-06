@@ -12,7 +12,7 @@ class AEScraper(Scraper):
 
 	def __init__(self):
 		super(AEScraper, self).__init__()
-		self.departments = {D_MEN : ['https://www.ae.com/men-s-clearance/web/s-cat/6470582']}
+		self.departments = {D_MEN : ['https://www.ae.com/men-s-clearance/web/s-cat/6470582'], D_WOMEN : ['https://www.ae.com/women-s-clearance/web/s-cat/6470590']}
 		self.product_selector = '.product-details-container'
 		self.product_data_selectors[P_NAME] = '.product-name span'
 		self.product_data_selectors[P_CURRENT_PRICE] = '.product-saleprice+ .product-saleprice'

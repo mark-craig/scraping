@@ -7,7 +7,7 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from selenium.webdriver.chrome.options import Options
 import shutil
-import pdb
+import traceback
 
 class Scraper(object):
 	"""
@@ -212,3 +212,6 @@ class Scraper(object):
 						valid_values += 1
 
 		self.logger.info('Accuracy of ' + str(valid_values/total_values) + ' across ' + str(number_of_entries) + ' products')
+
+	def log_crash(self):
+		self.logger.debug(traceback.format_exc())

@@ -15,7 +15,7 @@ class HMScraper(Scraper):
 
 	def __init__(self):
 		super(HMScraper, self).__init__()
-		self.departments = {D_MEN : ['http://www.hm.com/us/products/sale/men'], D_WOMEN : ['http://www.hm.com/us/products/sale/ladies']}
+		self.departments = {D_MEN : ['http://www.hm.com/us/products/sale/men'], D_WOMEN : []}
 		self.product_selector = '.product-list-item'
 		self.next_page_selector = '.load-more-btn'
 		self.product_data_selectors[P_NAME] = '.product-title'

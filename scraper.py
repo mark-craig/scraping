@@ -11,10 +11,10 @@ import traceback
 
 class Scraper(object):
 	"""
-	A class that serves as a base for each scraper that is specialized to a 
-	particular website. It should contain all data that will need to be customized 
-	to scrape from a website. The purpose for this class is that, should a website 
-	be updated, simple changes can be made here without disrupting the logic of the 
+	A class that serves as a base for each scraper that is specialized to a
+	particular website. It should contain all data that will need to be customized
+	to scrape from a website. The purpose for this class is that, should a website
+	be updated, simple changes can be made here without disrupting the logic of the
 	scraping process itself.
 	"""
 	# Methods to extract product data from Selenium elements
@@ -53,7 +53,7 @@ class Scraper(object):
 		else:
 			# if one is missing, the scraper only found one price, so return 0
 			return 0.0
-	
+
 	def fill_original_price(self, product_data):
 		# if the scraper could not find the original price, assume it's the current one
 		return product_data[P_CURRENT_PRICE]
@@ -71,23 +71,23 @@ class Scraper(object):
 			D_MEN : [],
 			D_WOMEN : []
 		}
-		# String representing CSS selector to get product entries on page. 
+		# String representing CSS selector to get product entries on page.
 		# The product details are extracted from these parent entries.
 		self.product_selector = ''
 		# Some stores have multiple pages for products rather than one page or infinite scrolling
 		# If this is the case, set a selector for the 'next page' link here
 		self.next_page_selector = ''
-		# CSS selectors to obtain Selenium elements containing product data. 
+		# CSS selectors to obtain Selenium elements containing product data.
 		# These may have to be updated if the site undergoes changes.
 		self.product_data_selectors = P_DATA.copy()
 
-		# A collection of methods to extract individual pieces of product data 
+		# A collection of methods to extract individual pieces of product data
 		self.product_data_extractors = P_DATA.copy()
 		self.product_data_extractors[P_LINK] = self.link_extract
 		self.product_data_extractors[P_IMAGE] = self.image_extract
 		self.product_data_extractors[P_CURRENT_PRICE] = self.price_extract
 		self.product_data_extractors[P_ORIGINAL_PRICE] = self.price_extract
-		
+
 		for key, value in self.product_data_extractors.iteritems():
 			if value is None:
 				self.product_data_extractors[key] = self.text_extract
@@ -120,7 +120,7 @@ class Scraper(object):
 		self.logger.addHandler(handler)
 
 		# Set up Selenium driver
-		chrome_options = Options()  
+		chrome_options = Options()
 		chrome_options.add_argument("--headless")
 		try:
 			# Windows should find driver in same directory
@@ -128,7 +128,7 @@ class Scraper(object):
 		except WebDriverException:
 			# Ubuntu needs the path to be specified
 			driver_path = os.path.join(os.getcwd(), 'chromedriver')
-			self.driver = webdriver.Chrome(driver_path)
+			self.driver = webdriver.Chrome(driver_path, chrome_options=chrome_options)
 
 
 
@@ -163,7 +163,7 @@ class Scraper(object):
 										break
 									except NoSuchElementException:
 										""" If the element is lazily loaded, the product
-										may need to be scrolled into view to be 
+										may need to be scrolled into view to be
 										accessed """
 										if (x + 1 < self.RETRY_LIMIT):
 											self.driver.execute_script("arguments[0].scrollIntoView();", p)
@@ -181,7 +181,7 @@ class Scraper(object):
 							json.dump(result, outfile)
 					# go to next page if applicable
 					remaining_page = self.get_next_page()
-			
+
 		self.analyze_and_log()
 
 	def get_next_page(self):
@@ -191,7 +191,7 @@ class Scraper(object):
 			# not paginated
 			return False
 		else:
-			try: 
+			try:
 				link = self.driver.find_element_by_css_selector(self.next_page_selector)
 				link.click()
 				return True
@@ -215,3 +215,8 @@ class Scraper(object):
 
 	def log_crash(self):
 		self.logger.debug(traceback.format_exc())
+
+	def __del__(self):
+		# close the selenium instance
+		self.driver.stop_client()
+		self.driver.close()
